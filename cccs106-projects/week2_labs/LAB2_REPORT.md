@@ -10,7 +10,7 @@
 ### Repository Setup
 - **GitHub Repository:** https://github.com/JohnRaymondAlba/cccs106-projects.git
 - **Local Repository:** ✅ Initialized and connected
-- **Commit History:** [Number] commits with descriptive messages
+- **Commit History:** 2 commits with descriptive messages
 
 ### Git Skills Demonstrated
 - ✅ Repository initialization and configuration
@@ -55,21 +55,26 @@ Another problem that I encountered is when I noticed that a button from the hell
 
 ## Learning Outcomes
 
-[Reflect on what you learned about version control, GUI development, and collaborative programming]
+From this lab activity, I learned how version control, GUI development, and collaborative programming are important in making software projects easier to manage and share. Using Git and GitHub showed me how to save my work, track changes, and use branches to keep my code organized when working alone or even when working with a team. Creating GUI applications with Flet, this activity helped me understand how to design programs that are not only functional but also user-friendly and interactive. Working with commits, documentation, and project organization also made me realize how collaboration and clear communication are important in building projects that are organized, proper, and easy to improve in the future.
 
 ## Screenshots
 
 ### Git Repository
-- [ ] GitHub repository with commit history
-- [ ] Local git log showing commits
+- GitHub repository with commit history \
+![](/cccs106-projects/week2_labs/lab2_screenshots/git_commit_history.png "git_commit_history")
+- Local git log showing commits \
+![](/cccs106-projects/week2_labs/lab2_screenshots/local_git_log.png "local_git_log")
 
 ### GUI Applications
-- hello_flet.py running with all features
+- hello_flet.py running with all features \
 ![](/cccs106-projects/week2_labs/lab2_screenshots/hello_flet.png "hello_flet")
 
-- personal_info_gui.py with filled form and generated profile
+- personal_info_gui.py with filled form and generated profile \
 ![](/cccs106-projects/week2_labs/lab2_screenshots/personal_info_gui.png "personal_info_gui")
 
 ## Future Enhancements
+I think that flet did make the interface more aesthetically pleasing to see. Both the hello_flet and personal_info_gui applications functions well as intended. Some reccomendations that can be made on how can this be improved are as follows:
 
-[Ideas for improving the applications or additional features to implement]
+1. You can add/generate more than 1 profile. 
+2. You can save your profile.
+3. You can view previews profile entries/ history.
