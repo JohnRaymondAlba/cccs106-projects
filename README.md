@@ -3,10 +3,10 @@ Application Development and Emerging Technologies
 Academic Year 2025-2026
 
 ## Student Information
-- **Name:** [Your Full Name]
-- **Student ID:** [Your Student ID]
-- **Program:** [Your Academic Program]
-- **Section:** [Your Section]
+- **Name:** John Raymond Alba
+- **Student ID:** 231002271
+- **Program:** BS in Computer Science
+- **Section:** 3A
 
 ## Repository Structure
 
