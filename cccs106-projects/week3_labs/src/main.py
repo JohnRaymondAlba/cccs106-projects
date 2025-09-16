@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 1. Import necessary libraries.
 import flet as ft
 import mysql.connector
