@@ -1,7 +1,7 @@
-# database.py
 import sqlite3
 
 def init_db():
+    
     """Initializes the database and creates the contacts table if it doesn't exist."""
     conn = sqlite3.connect('contacts.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -25,10 +25,19 @@ def add_contact_db(conn, name, phone, email):
     )
     conn.commit()
 
-def get_all_contacts_db(conn):
-    """Retrieves all contacts from the database."""
+def get_all_contacts_db(conn, search_term=None):
+    """Retrieves all contacts from the database, optionally filtered by search term."""
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name, phone, email FROM contacts")
+    
+    if search_term:
+        # Use LIKE for case-insensitive search
+        cursor.execute(
+            "SELECT id, name, phone, email FROM contacts WHERE name LIKE ? ORDER BY name",
+            (f"%{search_term}%",)
+        )
+    else:
+        cursor.execute("SELECT id, name, phone, email FROM contacts ORDER BY name")
+    
     return cursor.fetchall()
 
 def update_contact_db(conn, contact_id, name, phone, email):
