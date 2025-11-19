@@ -1,4 +1,3 @@
-# main.py
 """Weather Application using Flet v0.28.3"""
 
 import flet as ft
@@ -14,10 +13,10 @@ class WeatherApp:
     def __init__(self, page: ft.Page):
         self.page = page
         self.weather_service = WeatherService()
-        self.setup_page()
-        self.build_ui()
         self.history_file = Path("search_history.json")
         self.search_history = self.load_history()
+        self.setup_page()
+        self.build_ui()
     
     def load_history(self):
         """Load search history from file."""
@@ -37,6 +36,7 @@ class WeatherApp:
             self.search_history.insert(0, city)
             self.search_history = self.search_history[:10]  # Keep last 10
             self.save_history()
+            self.update_history_popup()
         
     def setup_page(self):
         """Configure page settings."""
@@ -60,7 +60,21 @@ class WeatherApp:
             color=ft.Colors.BLUE_700,
         )
         
-        # City input field
+        # History popup container
+        self.history_popup = ft.Container(
+            visible=False,
+            bgcolor=ft.Colors.WHITE,
+            border=ft.border.all(1, ft.Colors.BLUE_200),
+            border_radius=8,
+            padding=5,
+            shadow=ft.BoxShadow(
+                spread_radius=1,
+                blur_radius=10,
+                color=ft.Colors.BLACK12,
+            ),
+        )
+        
+        # City input field with hover events
         self.city_input = ft.TextField(
             label="Enter city name",
             hint_text="e.g., London, Tokyo, New York",
@@ -68,6 +82,23 @@ class WeatherApp:
             prefix_icon=ft.Icons.LOCATION_CITY,
             autofocus=True,
             on_submit=self.on_search,
+        )
+        
+        # Container for input and history popup (stacked)
+        self.input_stack = ft.Stack(
+            [
+                ft.Container(
+                    content=self.city_input,
+                    on_hover=self.on_input_hover,
+                ),
+                ft.Container(
+                    content=self.history_popup,
+                    top=60,  # Position below the input field
+                    left=0,
+                    right=0,
+                ),
+            ],
+            height=200,  # Give enough space for popup
         )
         
         # Search button
@@ -99,13 +130,16 @@ class WeatherApp:
         # Loading indicator
         self.loading = ft.ProgressRing(visible=False)
         
+        # Initialize history popup content
+        self.update_history_popup()
+        
         # Add all components to page
         self.page.add(
             ft.Column(
                 [
                     self.title,
                     ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
-                    self.city_input,
+                    self.input_stack,
                     self.search_button,
                     ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                     self.loading,
@@ -116,6 +150,83 @@ class WeatherApp:
                 spacing=10,
             )
         )
+    
+    def on_input_hover(self, e):
+        """Show/hide history popup on hover."""
+        if e.data == "true":  # Mouse entered
+            if self.search_history:
+                self.history_popup.visible = True
+        else:  # Mouse left
+            self.history_popup.visible = False
+        self.page.update()
+    
+    def update_history_popup(self):
+        """Update the content of history popup."""
+        if not self.search_history:
+            self.history_popup.content = ft.Text(
+                "No search history yet",
+                size=12,
+                color=ft.Colors.GREY_500,
+                italic=True,
+            )
+            return
+        
+        history_items = []
+        for city in self.search_history:
+            history_items.append(
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Icon(
+                                ft.Icons.HISTORY,
+                                size=16,
+                                color=ft.Colors.BLUE_400,
+                            ),
+                            ft.Text(
+                                city,
+                                size=14,
+                                color=ft.Colors.BLUE_900,
+                            ),
+                        ],
+                        spacing=8,
+                    ),
+                    padding=8,
+                    border_radius=4,
+                    ink=True,
+                    on_click=lambda e, c=city: self.select_from_history(c),
+                    on_hover=lambda e: self.on_history_item_hover(e),
+                )
+            )
+        
+        self.history_popup.content = ft.Column(
+            [
+                ft.Text(
+                    "Recent Searches",
+                    size=12,
+                    weight=ft.FontWeight.BOLD,
+                    color=ft.Colors.GREY_600,
+                ),
+                ft.Divider(height=5),
+                *history_items,
+            ],
+            spacing=2,
+            scroll=ft.ScrollMode.AUTO,
+        )
+    
+    def on_history_item_hover(self, e):
+        """Change background on history item hover."""
+        if e.data == "true":
+            e.control.bgcolor = ft.Colors.BLUE_50
+        else:
+            e.control.bgcolor = None
+        e.control.update()
+    
+    def select_from_history(self, city: str):
+        """Select a city from history."""
+        self.city_input.value = city
+        self.history_popup.visible = False
+        self.page.update()
+        self.page.run_task(self.get_weather)
     
     def on_search(self, e):
         """Handle search button click or enter key press."""
@@ -134,11 +245,15 @@ class WeatherApp:
         self.loading.visible = True
         self.error_message.visible = False
         self.weather_container.visible = False
+        self.history_popup.visible = False
         self.page.update()
         
         try:
             # Fetch weather data
             weather_data = await self.weather_service.get_weather(city)
+            
+            # Add to history
+            self.add_to_history(city)
             
             # Display weather
             self.display_weather(weather_data)
