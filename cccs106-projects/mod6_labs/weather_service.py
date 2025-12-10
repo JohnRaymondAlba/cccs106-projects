@@ -131,3 +131,49 @@ class WeatherService:
                 
         except Exception as e:
             raise WeatherServiceError(f"Error fetching weather data: {str(e)}")
+    
+    async def get_forecast(self, city: str) -> Dict:
+        """
+        Fetch 5-day weather forecast for a given city.
+        
+        Args:
+            city: Name of the city
+            
+        Returns:
+            Dictionary containing forecast data
+            
+        Raises:
+            WeatherServiceError: If the request fails
+        """
+        # Validate input
+        if not city or not city.strip():
+            raise WeatherServiceError("City name cannot be empty")
+        
+        city = city.strip()
+        
+        # Use forecast API endpoint
+        forecast_url = "https://api.openweathermap.org/data/2.5/forecast"
+        
+        params = {
+            "q": city,
+            "appid": self.api_key,
+            "units": Config.UNITS,
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(forecast_url, params=params)
+                response.raise_for_status()
+                return response.json()
+        
+        except httpx.TimeoutException:
+            raise WeatherServiceError("Request timed out. Please try again.")
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise WeatherServiceError(f"City '{city}' not found")
+            elif e.response.status_code == 401:
+                raise WeatherServiceError("Invalid API key")
+            else:
+                raise WeatherServiceError(f"HTTP error occurred: {str(e)}")
+        except Exception as e:
+            raise WeatherServiceError(f"Error fetching forecast data: {str(e)}")

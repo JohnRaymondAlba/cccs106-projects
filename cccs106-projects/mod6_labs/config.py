@@ -19,8 +19,8 @@ class Config:
     
     # App Configuration
     APP_TITLE = "Weather App"
-    APP_WIDTH = 400
-    APP_HEIGHT = 600
+    APP_WIDTH = 600
+    APP_HEIGHT = 800
     
     # API Settings
     UNITS = "metric"  # metric, imperial, or standard

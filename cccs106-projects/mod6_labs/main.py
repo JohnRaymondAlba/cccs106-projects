@@ -74,7 +74,7 @@ class WeatherApp:
             color_scheme_seed=ft.Colors.BLUE,
         )
         
-        self.page.padding = 20
+        self.page.padding = 16
         self.page.scroll = ft.ScrollMode.AUTO
         
         # Window properties (accessed via page.window in Flet 0.28.3)
@@ -89,8 +89,8 @@ class WeatherApp:
         """Build the user interface."""
         # Title with gradient effect (using blue theme)
         self.title = ft.Text(
-            "Weather App",
-            size=36,
+            "🌤️ Weather",
+            size=32,
             weight=ft.FontWeight.BOLD,
             color=ft.Colors.BLUE_700,
         )
@@ -131,19 +131,21 @@ class WeatherApp:
             label="Recent Searches",
             options=[ft.dropdown.Option(city) for city in self.search_history],
             on_change=self.load_from_history,
-            width=300,
+            width=450,
             border_color=ft.Colors.BLUE_300,
+            dense=True,
         )
         
         # City input field with enhanced styling
         self.city_input = ft.TextField(
-            label="Enter city name",
+            label="Search City",
             hint_text="e.g., London, Tokyo, New York",
             border_color=ft.Colors.BLUE_300,
             prefix_icon=ft.Icons.LOCATION_CITY,
             autofocus=True,
             on_submit=self.on_search,
-            width=300,
+            width=450,
+            dense=True,
         )
         
         # Container for input and dropdown
@@ -152,34 +154,58 @@ class WeatherApp:
                 self.city_input,
                 self.history_dropdown,
             ],
-            spacing=8,
+            spacing=4,
         )
         
         # Search button with enhanced styling and hover effect
         self.search_button = ft.ElevatedButton(
-            "Get Weather",
+            "Search",
             icon=ft.Icons.SEARCH,
             on_click=self.on_search,
             style=ft.ButtonStyle(
                 color=ft.Colors.WHITE,
                 bgcolor=ft.Colors.BLUE_700,
-                padding=ft.padding.symmetric(horizontal=32, vertical=12),
-                elevation=4,
+                padding=ft.padding.symmetric(horizontal=48, vertical=14),
+                elevation=6,
             ),
+            width=200,
         )
         
         # Weather display container with enhanced styling
         self.weather_container = ft.Container(
             visible=False,
             bgcolor=ft.Colors.LIGHT_BLUE_50,
-            border_radius=15,
-            padding=25,
+            border_radius=20,
+            padding=18,
             shadow=ft.BoxShadow(
-                spread_radius=1,
-                blur_radius=8,
-                color=ft.Colors.LIGHT_BLUE_100,
+                spread_radius=0,
+                blur_radius=12,
+                color=ft.Colors.LIGHT_BLUE_200,
             ),
             border=ft.border.all(1, ft.Colors.LIGHT_BLUE_200),
+        )
+        
+        # 5-day forecast container
+        self.forecast_container = ft.Container(
+            visible=False,
+            bgcolor=ft.Colors.LIGHT_BLUE_50,
+            border_radius=20,
+            padding=14,
+            shadow=ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=12,
+                color=ft.Colors.LIGHT_BLUE_200,
+            ),
+            border=ft.border.all(1, ft.Colors.LIGHT_BLUE_200),
+        )
+        
+        # Forecast header
+        self.forecast_header = ft.Text(
+            "📅 5-Day Forecast",
+            size=20,
+            weight=ft.FontWeight.BOLD,
+            color=ft.Colors.BLUE_700,
+            visible=False,
         )
         
         # Error message with enhanced styling
@@ -202,9 +228,14 @@ class WeatherApp:
         self.alert_banner = ft.Container(
             visible=False,
             bgcolor=ft.Colors.AMBER_100,
-            padding=15,
-            border_radius=10,
-            border=ft.border.all(2, ft.Colors.AMBER),
+            padding=12,
+            border_radius=12,
+            border=ft.border.all(1, ft.Colors.AMBER),
+            shadow=ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=8,
+                color=ft.Colors.AMBER_200,
+            ),
             content=ft.Row(
                 [
                     ft.Icon(ft.Icons.WARNING, color=ft.Colors.AMBER, size=32),
@@ -230,16 +261,25 @@ class WeatherApp:
                 [
                     self.alert_banner,
                     self.title_row,
-                    ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
+                    ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
                     self.input_container,
-                    self.search_button,
-                    ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
+                    ft.Row(
+                        [self.search_button],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                    ),
+                    ft.Divider(height=10, color=ft.Colors.TRANSPARENT),
                     self.loading,
                     self.error_message,
+                    # Current weather
                     self.weather_container,
+                    # Forecast section
+                    ft.Divider(height=8, color=ft.Colors.TRANSPARENT),
+                    self.forecast_header,
+                    self.forecast_container,
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=10,
+                spacing=8,
+                expand=True,
             )
         )
     
@@ -316,17 +356,28 @@ class WeatherApp:
         self.loading.visible = True
         self.error_message.visible = False
         self.weather_container.visible = False
+        self.forecast_container.visible = False
+        self.forecast_header.visible = False
         self.page.update()
         
         try:
-            # Fetch weather data from service
+            # Fetch current weather and forecast data from service
             weather_data = await self.weather_service.get_weather(city)
+            forecast_data = await self.weather_service.get_forecast(city)
             
             # Add successful search to history
             self.add_to_history(city)
             
             # Display the weather data (with animation)
             await self.display_weather(weather_data)
+            
+            # Display the forecast
+            self.display_forecast(forecast_data)
+            
+            # Show forecast header
+            self.forecast_header.visible = True
+            self.error_message.visible = False
+            self.page.update()
             
         except Exception as e:
             # Catch and display any errors (WeatherServiceError or unexpected)
@@ -458,63 +509,52 @@ class WeatherApp:
                 # Location header with enhanced styling
                 ft.Text(
                     f"{city_name}, {country}",
-                    size=28,
+                    size=24,
                     weight=ft.FontWeight.BOLD,
                     color=ft.Colors.BLUE_900,
                 ),
                 
-                ft.Divider(height=10, color=ft.Colors.LIGHT_BLUE_200),
+                ft.Divider(height=6, color=ft.Colors.LIGHT_BLUE_200),
                 
-                # Weather icon and description
+                # Weather icon and description in a row
                 ft.Row(
                     [
                         ft.Image(
                             src=f"https://openweathermap.org/img/wn/{icon_code}@2x.png",
-                            width=100,
-                            height=100,
+                            width=80,
+                            height=80,
                         ),
                         ft.Column(
                             [
                                 ft.Text(
                                     description,
-                                    size=18,
+                                    size=16,
                                     weight=ft.FontWeight.W_600,
                                     color=ft.Colors.BLUE_700,
                                 ),
+                                ft.Text(
+                                    f"{temp:.1f}{temp_unit_display}",
+                                    size=32,
+                                    weight=ft.FontWeight.BOLD,
+                                    color=ft.Colors.BLUE_900,
+                                ),
+                                ft.Text(
+                                    f"Feels like {feels_like:.1f}{temp_unit_display}",
+                                    size=12,
+                                    color=ft.Colors.BLUE_600,
+                                    weight=ft.FontWeight.W_500,
+                                ),
                             ],
-                            alignment=ft.MainAxisAlignment.CENTER,
+                            spacing=2,
                         ),
                     ],
-                    alignment=ft.MainAxisAlignment.CENTER,
+                    alignment=ft.MainAxisAlignment.START,
                     spacing=10,
                 ),
                 
-                ft.Divider(height=10, color=ft.Colors.LIGHT_BLUE_200),
+                ft.Divider(height=6, color=ft.Colors.LIGHT_BLUE_200),
                 
-                # Temperature with enhanced styling
-                ft.Column(
-                    [
-                        ft.Text(
-                            f"{temp:.1f}{temp_unit_display}",
-                            size=56,
-                            weight=ft.FontWeight.BOLD,
-                            color=ft.Colors.BLUE_900,
-                        ),
-                        
-                        ft.Text(
-                            f"Feels like {feels_like:.1f}{temp_unit_display}",
-                            size=14,
-                            color=ft.Colors.BLUE_600,
-                            weight=ft.FontWeight.W_500,
-                        ),
-                    ],
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=5,
-                ),
-                
-                ft.Divider(height=15, color=ft.Colors.LIGHT_BLUE_200),
-                
-                # Additional info with better spacing
+                # Additional info cards in a more compact grid
                 ft.Row(
                     [
                         self.create_info_card(
@@ -524,16 +564,16 @@ class WeatherApp:
                         ),
                         self.create_info_card(
                             ft.Icons.AIR,
-                            "Wind Speed",
+                            "Wind",
                             f"{wind_speed} m/s"
                         ),
                     ],
                     alignment=ft.MainAxisAlignment.SPACE_AROUND,
-                    spacing=10,
+                    spacing=8,
                 ),
             ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=12,
+            horizontal_alignment=ft.CrossAxisAlignment.START,
+            spacing=4,
         )
         
         # Setup animation - start with opacity 0
@@ -551,13 +591,122 @@ class WeatherApp:
         self.weather_container.opacity = 1
         self.page.update()
     
+    def display_forecast(self, data: dict):
+        """Display 5-day weather forecast."""
+        try:
+            from datetime import datetime
+            
+            # Extract forecast data
+            forecast_list = data.get("list", [])
+            
+            if not forecast_list:
+                print("No forecast data available")
+                return
+            
+            # Group forecasts by day (take one entry per day at noon)
+            daily_forecasts = {}
+            for item in forecast_list:
+                dt = datetime.fromtimestamp(item["dt"])
+                day = dt.date()
+                
+                # Take the entry closest to noon
+                hour = dt.hour
+                if day not in daily_forecasts or abs(hour - 12) < abs(datetime.fromtimestamp(daily_forecasts[day]["dt"]).hour - 12):
+                    daily_forecasts[day] = item
+            
+            # Get the next 5 days
+            forecast_days = sorted(list(daily_forecasts.items()))[:5]
+            
+            if not forecast_days:
+                print("No forecast days found")
+                return
+            
+            # Create forecast cards
+            forecast_row = ft.Column(
+                [
+                    self.create_forecast_card(day, forecast_data)
+                    for day, forecast_data in forecast_days
+                ],
+                spacing=6,
+            )
+            
+            self.forecast_container.content = forecast_row
+            self.forecast_container.visible = True
+            print(f"Forecast displayed with {len(forecast_days)} days")
+            
+        except Exception as e:
+            print(f"Error displaying forecast: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def create_forecast_card(self, day, forecast_data):
+        """Create a forecast card for a specific day."""
+        from datetime import datetime
+        
+        # Extract data
+        temp_min = forecast_data.get("main", {}).get("temp_min", 0)
+        temp_max = forecast_data.get("main", {}).get("temp_max", 0)
+        description = forecast_data.get("weather", [{}])[0].get("description", "").title()
+        icon_code = forecast_data.get("weather", [{}])[0].get("icon", "01d")
+        humidity = forecast_data.get("main", {}).get("humidity", 0)
+        
+        # Convert temperatures if Fahrenheit is selected
+        if self.temp_unit == "F":
+            temp_min = self.celsius_to_fahrenheit(temp_min)
+            temp_max = self.celsius_to_fahrenheit(temp_max)
+            temp_unit = "°F"
+        else:
+            temp_unit = "°C"
+        
+        # Format day name
+        day_name = day.strftime("%a, %b %d")
+        
+        return ft.Container(
+            content=ft.Row(
+                [
+                    ft.Column(
+                        [
+                            ft.Text(day_name, size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
+                            ft.Text(description, size=10, color=ft.Colors.BLUE_600),
+                        ],
+                        spacing=2,
+                        expand=True,
+                    ),
+                    ft.Image(
+                        src=f"https://openweathermap.org/img/wn/{icon_code}.png",
+                        width=50,
+                        height=50,
+                    ),
+                    ft.Column(
+                        [
+                            ft.Text(f"{temp_max:.0f}{temp_unit}", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.BLUE_900),
+                            ft.Text(f"{temp_min:.0f}{temp_unit}", size=10, color=ft.Colors.BLUE_600),
+                        ],
+                        spacing=1,
+                        horizontal_alignment=ft.CrossAxisAlignment.END,
+                    ),
+                ],
+                spacing=10,
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            ),
+            bgcolor=ft.Colors.WHITE,
+            border_radius=14,
+            padding=12,
+            border=ft.border.all(1, ft.Colors.LIGHT_BLUE_200),
+            shadow=ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=4,
+                color=ft.Colors.LIGHT_BLUE_100,
+            ),
+        )
+    
     def create_info_card(self, icon, label, value):
         """Create an enhanced info card for weather details."""
         return ft.Container(
             content=ft.Column(
                 [
                     ft.Icon(icon, size=32, color=ft.Colors.BLUE_700),
-                    ft.Text(label, size=11, color=ft.Colors.BLUE_600, weight=ft.FontWeight.W_500),
+                    ft.Text(label, size=11, color=ft.Colors.BLUE_600, weight=ft.FontWeight.W_600),
                     ft.Text(
                         value,
                         size=18,
@@ -569,13 +718,13 @@ class WeatherApp:
                 spacing=6,
             ),
             bgcolor=ft.Colors.WHITE,
-            border_radius=12,
-            padding=18,
-            width=140,
+            border_radius=14,
+            padding=14,
+            width=150,
             shadow=ft.BoxShadow(
                 spread_radius=0,
-                blur_radius=4,
-                color=ft.Colors.LIGHT_BLUE_100,
+                blur_radius=6,
+                color=ft.Colors.LIGHT_BLUE_200,
             ),
             border=ft.border.all(1, ft.Colors.LIGHT_BLUE_200),
         )
