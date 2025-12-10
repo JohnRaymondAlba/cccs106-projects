@@ -63,17 +63,19 @@ A modern, feature-rich weather application built with Flet 0.28.3 that provides 
    - **Why chosen**: Keeps users informed of potentially hazardous conditions
    - **Challenges**: Setting appropriate alert thresholds and displaying them prominently
 
-6. **Comprehensive Error Handling**
-   - Async/await pattern for non-blocking API calls
-   - User-friendly error messages for common issues (city not found, API errors, timeouts)
-   - Input validation (empty city names, length limits)
-   - Loading indicators during data fetches
-   - Graceful error recovery without app crashes
-   - **Why chosen**: Ensures reliability and better user experience
-   - **Challenges**: Handling various API error scenarios and timeouts properly
-
 ## Screenshots
-[Add 3-5 screenshots showing different aspects of your app]
+
+### Main Weather Display, Search and Forecast
+![Weather Search](screenshots/1.gif)
+
+### Dark Mode & Theme Toggle
+![Temperature Toggle](screenshots/2.gif)
+
+### Temperature Unit Conversion & 5-Day Forecast
+![Dark Mode](screenshots/3.gif)
+
+### Error Handling
+![Weather Alerts](screenshots/4.gif)
 
 ## Installation
 
