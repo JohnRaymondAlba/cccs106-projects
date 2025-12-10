@@ -14,7 +14,10 @@ class WeatherApp:
         self.page = page
         self.weather_service = WeatherService()
         self.history_file = Path("search_history.json")
+        self.temp_pref_file = Path("temp_preference.json")
         self.search_history = self.load_history()
+        self.temp_unit = self.load_temp_preference()  # "C" or "F"
+        self.current_weather_data = None  # Store current weather data for unit conversion
         self.setup_page()
         self.build_ui()
     
@@ -25,10 +28,31 @@ class WeatherApp:
                 return json.load(f)
         return []
     
+    def load_temp_preference(self):
+        """Load temperature unit preference from file."""
+        if self.temp_pref_file.exists():
+            with open(self.temp_pref_file, 'r') as f:
+                data = json.load(f)
+                return data.get("unit", "C")
+        return "C"  # Default to Celsius
+    
+    def save_temp_preference(self):
+        """Save temperature unit preference to file."""
+        with open(self.temp_pref_file, 'w') as f:
+            json.dump({"unit": self.temp_unit}, f)
+    
     def save_history(self):
         """Save search history to file."""
         with open(self.history_file, 'w') as f:
             json.dump(self.search_history, f)
+    
+    def celsius_to_fahrenheit(self, celsius: float) -> float:
+        """Convert Celsius to Fahrenheit."""
+        return (celsius * 9/5) + 32
+    
+    def fahrenheit_to_celsius(self, fahrenheit: float) -> float:
+        """Convert Fahrenheit to Celsius."""
+        return (fahrenheit - 32) * 5/9
     
     def add_to_history(self, city: str):
         """Add city to search history."""
@@ -79,11 +103,25 @@ class WeatherApp:
             icon_size=24,
         )
         
-        # Title row with theme button
+        # Temperature unit toggle button
+        self.temp_unit_button = ft.IconButton(
+            icon=ft.Icons.THERMOSTAT,
+            tooltip=f"Temperature: {self.temp_unit}°",
+            on_click=self.toggle_temp_unit,
+            icon_size=24,
+        )
+        
+        # Title row with theme button and temperature button
         self.title_row = ft.Row(
             [
                 self.title,
-                self.theme_button,
+                ft.Row(
+                    [
+                        self.temp_unit_button,
+                        self.theme_button,
+                    ],
+                    spacing=5,
+                ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
@@ -236,6 +274,30 @@ class WeatherApp:
             self.theme_button.icon = ft.Icons.DARK_MODE
         self.page.update()
     
+    def toggle_temp_unit(self, e):
+        """Toggle between Celsius and Fahrenheit."""
+        if self.temp_unit == "C":
+            self.temp_unit = "F"
+        else:
+            self.temp_unit = "C"
+        
+        # Save preference
+        self.save_temp_preference()
+        
+        # Update button tooltip
+        self.temp_unit_button.tooltip = f"Temperature: {self.temp_unit}°"
+        
+        # Redisplay weather if data exists
+        if self.current_weather_data:
+            self.page.run_task(self.redisplay_weather)
+        
+        self.page.update()
+    
+    async def redisplay_weather(self):
+        """Redisplay current weather with new temperature unit."""
+        if self.current_weather_data:
+            await self.display_weather(self.current_weather_data)
+    
     async def get_weather(self):
         """Fetch and display weather data with comprehensive error handling."""
         city = self.city_input.value.strip()
@@ -277,8 +339,6 @@ class WeatherApp:
     
     def check_weather_alerts(self, temp: float, wind_speed: float, humidity: float):
         """Check for extreme weather conditions and display alerts."""
-        print(f"DEBUG: Checking alerts - temp: {temp}, wind: {wind_speed}, humidity: {humidity}")
-        
         alert_triggered = False
         alert_title = ""
         alert_msg = ""
@@ -324,7 +384,6 @@ class WeatherApp:
         
         # Update banner
         if alert_triggered:
-            print(f"DEBUG: Alert triggered - {alert_title}")
             self.alert_banner.bgcolor = bg_color
             self.alert_banner.border = ft.border.all(2, border_color)
             self.alert_banner.content = ft.Row(
@@ -345,9 +404,7 @@ class WeatherApp:
                 spacing=10,
             )
             self.alert_banner.visible = True
-            print("DEBUG: Banner visible set to True")
         else:
-            print("DEBUG: No alert triggered")
             self.alert_banner.visible = False
         
         self.page.update()
@@ -365,6 +422,9 @@ class WeatherApp:
     async def display_weather(self, data: dict):
 
         """Display weather information with animation."""
+        # Store current weather data for unit conversion
+        self.current_weather_data = data
+        
         # Extract data
         city_name = data.get("name", "Unknown")
         country = data.get("sys", {}).get("country", "")
@@ -374,6 +434,14 @@ class WeatherApp:
         description = data.get("weather", [{}])[0].get("description", "").title()
         icon_code = data.get("weather", [{}])[0].get("icon", "01d")
         wind_speed = data.get("wind", {}).get("speed", 0)
+        
+        # Convert temperatures if Fahrenheit is selected
+        if self.temp_unit == "F":
+            temp = self.celsius_to_fahrenheit(temp)
+            feels_like = self.celsius_to_fahrenheit(feels_like)
+            temp_unit_display = "°F"
+        else:
+            temp_unit_display = "°C"
         
         # Check for extreme weather conditions and display alerts
         self.check_weather_alerts(temp, wind_speed, humidity)
@@ -421,14 +489,14 @@ class WeatherApp:
                 ft.Column(
                     [
                         ft.Text(
-                            f"{temp:.1f}°C",
+                            f"{temp:.1f}{temp_unit_display}",
                             size=56,
                             weight=ft.FontWeight.BOLD,
                             color=ft.Colors.BLUE_900,
                         ),
                         
                         ft.Text(
-                            f"Feels like {feels_like:.1f}°C",
+                            f"Feels like {feels_like:.1f}{temp_unit_display}",
                             size=14,
                             color=ft.Colors.BLUE_600,
                             weight=ft.FontWeight.W_500,
