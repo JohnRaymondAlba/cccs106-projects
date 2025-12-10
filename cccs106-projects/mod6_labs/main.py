@@ -337,7 +337,7 @@ class WeatherApp:
             self.loading.visible = False
             self.page.update()
     
-    def check_weather_alerts(self, temp: float, wind_speed: float, humidity: float):
+    def check_weather_alerts(self, temp_celsius: float, wind_speed: float, humidity: float, temp_unit: str):
         """Check for extreme weather conditions and display alerts."""
         alert_triggered = False
         alert_title = ""
@@ -346,11 +346,15 @@ class WeatherApp:
         bg_color = ft.Colors.AMBER_100
         border_color = ft.Colors.AMBER
         
-        # High temperature alert
-        if temp > 35:
+        # High temperature alert (>35°C or >95°F)
+        if temp_celsius > 35:
             alert_triggered = True
             alert_title = "⚠️ High Temperature Alert!"
-            alert_msg = "Temperature exceeds 35°C"
+            if temp_unit == "F":
+                display_temp = self.celsius_to_fahrenheit(temp_celsius)
+                alert_msg = f"Temperature exceeds 95°F ({display_temp:.1f}°F)"
+            else:
+                alert_msg = f"Temperature exceeds 35°C ({temp_celsius:.1f}°C)"
             alert_color = ft.Colors.ORANGE
             bg_color = ft.Colors.ORANGE_100
             border_color = ft.Colors.ORANGE
@@ -428,8 +432,8 @@ class WeatherApp:
         # Extract data
         city_name = data.get("name", "Unknown")
         country = data.get("sys", {}).get("country", "")
-        temp = data.get("main", {}).get("temp", 0)
-        feels_like = data.get("main", {}).get("feels_like", 0)
+        temp_celsius = data.get("main", {}).get("temp", 0)
+        feels_like_celsius = data.get("main", {}).get("feels_like", 0)
         humidity = data.get("main", {}).get("humidity", 0)
         description = data.get("weather", [{}])[0].get("description", "").title()
         icon_code = data.get("weather", [{}])[0].get("icon", "01d")
@@ -437,14 +441,16 @@ class WeatherApp:
         
         # Convert temperatures if Fahrenheit is selected
         if self.temp_unit == "F":
-            temp = self.celsius_to_fahrenheit(temp)
-            feels_like = self.celsius_to_fahrenheit(feels_like)
+            temp = self.celsius_to_fahrenheit(temp_celsius)
+            feels_like = self.celsius_to_fahrenheit(feels_like_celsius)
             temp_unit_display = "°F"
         else:
+            temp = temp_celsius
+            feels_like = feels_like_celsius
             temp_unit_display = "°C"
         
-        # Check for extreme weather conditions and display alerts
-        self.check_weather_alerts(temp, wind_speed, humidity)
+        # Check for extreme weather conditions and display alerts (always use Celsius for thresholds)
+        self.check_weather_alerts(temp_celsius, wind_speed, humidity, self.temp_unit)
         
         # Build weather display with enhanced styling
         self.weather_container.content = ft.Column(
