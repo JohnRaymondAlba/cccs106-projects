@@ -248,7 +248,53 @@ class WeatherApp:
             self.loading.visible = False
             self.page.update()
     
+    def check_weather_alerts(self, temp: float, wind_speed: float, humidity: float):
+        """Check for extreme weather conditions and display alerts."""
+        alerts = []
+        
+        # High temperature alert
+        if temp > 35:
+            alerts.append(("⚠️ High Temperature Alert!", "Temperature exceeds 35°C", ft.Colors.ORANGE, ft.Colors.ORANGE_100))
+        
+        # Extreme wind alert
+        if wind_speed > 15:
+            alerts.append(("💨 Strong Wind Alert!", f"Wind speed: {wind_speed} m/s", ft.Colors.RED, ft.Colors.RED_100))
+        
+        # Low humidity alert
+        if humidity < 30:
+            alerts.append(("💧 Low Humidity Alert!", f"Humidity: {humidity}%", ft.Colors.AMBER, ft.Colors.AMBER_100))
+        
+        # High humidity alert
+        if humidity > 80:
+            alerts.append(("💧 High Humidity Alert!", f"Humidity: {humidity}%", ft.Colors.BLUE, ft.Colors.BLUE_100))
+        
+        # Display the first alert if any exist
+        if alerts:
+            alert_title, alert_msg, alert_color, bg_color = alerts[0]
+            banner = ft.Banner(
+                bgcolor=bg_color,
+                leading=ft.Icon(ft.Icons.WARNING, color=alert_color, size=40),
+                content=ft.Column(
+                    [
+                        ft.Text(alert_title, weight=ft.FontWeight.BOLD, color=alert_color),
+                        ft.Text(alert_msg, size=12, color=ft.Colors.BLACK),
+                    ]
+                ),
+                actions=[
+                    ft.TextButton("Dismiss", on_click=self.dismiss_banner),
+                ],
+            )
+            self.page.banner = banner
+            self.page.banner.open = True
+            self.page.update()
+    
+    def dismiss_banner(self, e):
+        """Dismiss the alert banner."""
+        self.page.banner.open = False
+        self.page.update()
+    
     async def display_weather(self, data: dict):
+
         """Display weather information with animation."""
         # Extract data
         city_name = data.get("name", "Unknown")
@@ -259,6 +305,9 @@ class WeatherApp:
         description = data.get("weather", [{}])[0].get("description", "").title()
         icon_code = data.get("weather", [{}])[0].get("icon", "01d")
         wind_speed = data.get("wind", {}).get("speed", 0)
+        
+        # Check for extreme weather conditions and display alerts
+        self.check_weather_alerts(temp, wind_speed, humidity)
         
         # Build weather display with enhanced styling
         self.weather_container.content = ft.Column(
