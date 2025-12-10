@@ -41,11 +41,21 @@ class WeatherApp:
     def setup_page(self):
         """Configure page settings."""
         self.page.title = Config.APP_TITLE
-        self.page.theme_mode = ft.ThemeMode.LIGHT
+        
+        # Use system theme (respects OS dark mode settings)
+        self.page.theme_mode = ft.ThemeMode.SYSTEM
+        
+        # Custom theme with blue color scheme
+        self.page.theme = ft.Theme(
+            color_scheme_seed=ft.Colors.BLUE,
+        )
+        
         self.page.padding = 20
-        self.page.window.width = 800
-        self.page.window.height = 800
-        self.page.window.resizable = True
+        
+        # Window properties (accessed via page.window in Flet 0.28.3)
+        self.page.window.width = Config.APP_WIDTH
+        self.page.window.height = Config.APP_HEIGHT
+        self.page.window.resizable = False
         
         # Center the window on desktop
         self.page.window.center()
@@ -58,6 +68,22 @@ class WeatherApp:
             size=32,
             weight=ft.FontWeight.BOLD,
             color=ft.Colors.BLUE_700,
+        )
+        
+        # Theme toggle button
+        self.theme_button = ft.IconButton(
+            icon=ft.Icons.DARK_MODE,
+            tooltip="Toggle theme",
+            on_click=self.toggle_theme,
+        )
+        
+        # Title row with theme button
+        self.title_row = ft.Row(
+            [
+                self.title,
+                self.theme_button,
+            ],
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
         
         # History popup container
@@ -137,7 +163,7 @@ class WeatherApp:
         self.page.add(
             ft.Column(
                 [
-                    self.title,
+                    self.title_row,
                     ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                     self.input_stack,
                     self.search_button,
@@ -232,6 +258,16 @@ class WeatherApp:
         """Handle search button click or enter key press."""
         self.page.run_task(self.get_weather)
     
+    def toggle_theme(self, e):
+        """Toggle between light and dark theme."""
+        if self.page.theme_mode == ft.ThemeMode.LIGHT:
+            self.page.theme_mode = ft.ThemeMode.DARK
+            self.theme_button.icon = ft.Icons.LIGHT_MODE
+        else:
+            self.page.theme_mode = ft.ThemeMode.LIGHT
+            self.theme_button.icon = ft.Icons.DARK_MODE
+        self.page.update()
+    
     async def get_weather(self):
         """Fetch and display weather data with comprehensive error handling."""
         city = self.city_input.value.strip()
@@ -260,8 +296,8 @@ class WeatherApp:
             # Add successful search to history
             self.add_to_history(city)
             
-            # Display the weather data
-            self.display_weather(weather_data)
+            # Display the weather data (with animation)
+            await self.display_weather(weather_data)
             
         except Exception as e:
             # Catch and display any errors (WeatherServiceError or unexpected)
@@ -272,8 +308,8 @@ class WeatherApp:
             self.loading.visible = False
             self.page.update()
     
-    def display_weather(self, data: dict):
-        """Display weather information."""
+    async def display_weather(self, data: dict):
+        """Display weather information with animation."""
         # Extract data
         city_name = data.get("name", "Unknown")
         country = data.get("sys", {}).get("country", "")
@@ -348,8 +384,19 @@ class WeatherApp:
             spacing=10,
         )
         
+        # Setup animation - start with opacity 0
+        self.weather_container.animate_opacity = 300  # 300ms animation duration
+        self.weather_container.opacity = 0
         self.weather_container.visible = True
         self.error_message.visible = False
+        self.page.update()
+        
+        # Small delay to ensure container is rendered before animation
+        import asyncio
+        await asyncio.sleep(0.05)
+        
+        # Fade in animation
+        self.weather_container.opacity = 1
         self.page.update()
     
     def create_info_card(self, icon, label, value):
