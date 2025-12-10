@@ -32,8 +32,11 @@ class WeatherService:
         Raises:
             WeatherServiceError: If the request fails
         """
-        if not city:
+        # Validate input
+        if not city or not city.strip():
             raise WeatherServiceError("City name cannot be empty")
+        
+        city = city.strip()
         
         # Build request parameters
         params = {
@@ -67,9 +70,24 @@ class WeatherService:
                     )
                 
                 # Parse JSON response
-                data = response.json()
+                try:
+                    data = response.json()
+                except ValueError:
+                    raise WeatherServiceError(
+                        "Invalid response from weather service. Please try again."
+                    )
+                
+                # Validate response data
+                if not data:
+                    raise WeatherServiceError(
+                        "Empty response from weather service. Please try again."
+                    )
+                
                 return data
                 
+        except WeatherServiceError:
+            # Re-raise our custom exceptions
+            raise
         except httpx.TimeoutException:
             raise WeatherServiceError(
                 "Request timed out. Please check your internet connection."

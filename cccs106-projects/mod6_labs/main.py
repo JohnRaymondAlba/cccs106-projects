@@ -233,15 +233,20 @@ class WeatherApp:
         self.page.run_task(self.get_weather)
     
     async def get_weather(self):
-        """Fetch and display weather data."""
+        """Fetch and display weather data with comprehensive error handling."""
         city = self.city_input.value.strip()
         
-        # Validate input
+        # Validate input - empty city name
         if not city:
             self.show_error("Please enter a city name")
             return
         
-        # Show loading, hide previous results
+        # Validate input - check for valid characters (optional but recommended)
+        if len(city) > 50:
+            self.show_error("City name is too long (max 50 characters)")
+            return
+        
+        # Show loading state, hide previous results
         self.loading.visible = True
         self.error_message.visible = False
         self.weather_container.visible = False
@@ -249,19 +254,21 @@ class WeatherApp:
         self.page.update()
         
         try:
-            # Fetch weather data
+            # Fetch weather data from service
             weather_data = await self.weather_service.get_weather(city)
             
-            # Add to history
+            # Add successful search to history
             self.add_to_history(city)
             
-            # Display weather
+            # Display the weather data
             self.display_weather(weather_data)
             
         except Exception as e:
+            # Catch and display any errors (WeatherServiceError or unexpected)
             self.show_error(str(e))
         
         finally:
+            # Always hide loading indicator, regardless of success or failure
             self.loading.visible = False
             self.page.update()
     
@@ -369,10 +376,23 @@ class WeatherApp:
         )
     
     def show_error(self, message: str):
-        """Display error message."""
+        """
+        Display error message to user with visual feedback.
+        
+        Args:
+            message: Error message to display
+        """
+        # Ensure message is a string and not None
+        message = str(message) if message else "An unexpected error occurred"
+        
+        # Format error message with visual indicator
         self.error_message.value = f"❌ {message}"
         self.error_message.visible = True
+        
+        # Hide weather container to show error prominently
         self.weather_container.visible = False
+        
+        # Update page to display error immediately
         self.page.update()
 
 
