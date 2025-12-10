@@ -160,10 +160,37 @@ class WeatherApp:
             stroke_width=4,
         )
         
+        # Create alert banner
+        self.alert_banner = ft.Container(
+            visible=False,
+            bgcolor=ft.Colors.AMBER_100,
+            padding=15,
+            border_radius=10,
+            border=ft.border.all(2, ft.Colors.AMBER),
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.WARNING, color=ft.Colors.AMBER, size=32),
+                    ft.Column(
+                        [
+                            ft.Text("Alert", weight=ft.FontWeight.BOLD, size=16),
+                            ft.Text("Alert message", size=12),
+                        ],
+                        expand=True,
+                    ),
+                    ft.IconButton(
+                        ft.Icons.CLOSE,
+                        on_click=self.dismiss_alert_banner,
+                    ),
+                ],
+                spacing=10,
+            ),
+        )
+        
         # Add all components to page
         self.page.add(
             ft.Column(
                 [
+                    self.alert_banner,
                     self.title_row,
                     ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                     self.input_container,
@@ -250,47 +277,89 @@ class WeatherApp:
     
     def check_weather_alerts(self, temp: float, wind_speed: float, humidity: float):
         """Check for extreme weather conditions and display alerts."""
-        alerts = []
+        print(f"DEBUG: Checking alerts - temp: {temp}, wind: {wind_speed}, humidity: {humidity}")
+        
+        alert_triggered = False
+        alert_title = ""
+        alert_msg = ""
+        alert_color = ft.Colors.AMBER
+        bg_color = ft.Colors.AMBER_100
+        border_color = ft.Colors.AMBER
         
         # High temperature alert
         if temp > 35:
-            alerts.append(("⚠️ High Temperature Alert!", "Temperature exceeds 35°C", ft.Colors.ORANGE, ft.Colors.ORANGE_100))
+            alert_triggered = True
+            alert_title = "⚠️ High Temperature Alert!"
+            alert_msg = "Temperature exceeds 35°C"
+            alert_color = ft.Colors.ORANGE
+            bg_color = ft.Colors.ORANGE_100
+            border_color = ft.Colors.ORANGE
         
         # Extreme wind alert
-        if wind_speed > 15:
-            alerts.append(("💨 Strong Wind Alert!", f"Wind speed: {wind_speed} m/s", ft.Colors.RED, ft.Colors.RED_100))
+        elif wind_speed > 15:
+            alert_triggered = True
+            alert_title = "💨 Strong Wind Alert!"
+            alert_msg = f"Wind speed: {wind_speed} m/s"
+            alert_color = ft.Colors.RED
+            bg_color = ft.Colors.RED_100
+            border_color = ft.Colors.RED
         
         # Low humidity alert
-        if humidity < 30:
-            alerts.append(("💧 Low Humidity Alert!", f"Humidity: {humidity}%", ft.Colors.AMBER, ft.Colors.AMBER_100))
+        elif humidity < 30:
+            alert_triggered = True
+            alert_title = "💧 Low Humidity Alert!"
+            alert_msg = f"Humidity: {humidity}%"
+            alert_color = ft.Colors.AMBER
+            bg_color = ft.Colors.AMBER_100
+            border_color = ft.Colors.AMBER
         
         # High humidity alert
-        if humidity > 80:
-            alerts.append(("💧 High Humidity Alert!", f"Humidity: {humidity}%", ft.Colors.BLUE, ft.Colors.BLUE_100))
+        elif humidity > 80:
+            alert_triggered = True
+            alert_title = "💧 High Humidity Alert!"
+            alert_msg = f"Humidity: {humidity}%"
+            alert_color = ft.Colors.BLUE
+            bg_color = ft.Colors.BLUE_100
+            border_color = ft.Colors.BLUE
         
-        # Display the first alert if any exist
-        if alerts:
-            alert_title, alert_msg, alert_color, bg_color = alerts[0]
-            banner = ft.Banner(
-                bgcolor=bg_color,
-                leading=ft.Icon(ft.Icons.WARNING, color=alert_color, size=40),
-                content=ft.Column(
-                    [
-                        ft.Text(alert_title, weight=ft.FontWeight.BOLD, color=alert_color),
-                        ft.Text(alert_msg, size=12, color=ft.Colors.BLACK),
-                    ]
-                ),
-                actions=[
-                    ft.TextButton("Dismiss", on_click=self.dismiss_banner),
+        # Update banner
+        if alert_triggered:
+            print(f"DEBUG: Alert triggered - {alert_title}")
+            self.alert_banner.bgcolor = bg_color
+            self.alert_banner.border = ft.border.all(2, border_color)
+            self.alert_banner.content = ft.Row(
+                [
+                    ft.Icon(ft.Icons.WARNING, color=alert_color, size=32),
+                    ft.Column(
+                        [
+                            ft.Text(alert_title, weight=ft.FontWeight.BOLD, size=16, color=alert_color),
+                            ft.Text(alert_msg, size=12, color=ft.Colors.BLACK),
+                        ],
+                        expand=True,
+                    ),
+                    ft.IconButton(
+                        ft.Icons.CLOSE,
+                        on_click=self.dismiss_alert_banner,
+                    ),
                 ],
+                spacing=10,
             )
-            self.page.banner = banner
-            self.page.banner.open = True
-            self.page.update()
+            self.alert_banner.visible = True
+            print("DEBUG: Banner visible set to True")
+        else:
+            print("DEBUG: No alert triggered")
+            self.alert_banner.visible = False
+        
+        self.page.update()
     
     def dismiss_banner(self, e):
         """Dismiss the alert banner."""
         self.page.banner.open = False
+        self.page.update()
+    
+    def dismiss_alert_banner(self, e):
+        """Dismiss the alert container."""
+        self.alert_banner.visible = False
         self.page.update()
     
     async def display_weather(self, data: dict):
