@@ -31,12 +31,12 @@ class WeatherApp:
             json.dump(self.search_history, f)
     
     def add_to_history(self, city: str):
-        """Add city to history."""
+        """Add city to search history."""
         if city not in self.search_history:
             self.search_history.insert(0, city)
-            self.search_history = self.search_history[:10]  # Keep last 10
+            self.search_history = self.search_history[:5]  # Keep last 5
             self.save_history()
-            self.update_history_popup()
+            self.update_history_dropdown()
         
     def setup_page(self):
         """Configure page settings."""
@@ -86,21 +86,15 @@ class WeatherApp:
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
         
-        # History popup container
-        self.history_popup = ft.Container(
-            visible=False,
-            bgcolor=ft.Colors.WHITE,
-            border=ft.border.all(1, ft.Colors.BLUE_200),
-            border_radius=8,
-            padding=5,
-            shadow=ft.BoxShadow(
-                spread_radius=1,
-                blur_radius=10,
-                color=ft.Colors.BLACK12,
-            ),
+        # History dropdown
+        self.history_dropdown = ft.Dropdown(
+            label="Recent Searches",
+            options=[ft.dropdown.Option(city) for city in self.search_history],
+            on_change=self.load_from_history,
+            width=250,
         )
         
-        # City input field with hover events
+        # City input field
         self.city_input = ft.TextField(
             label="Enter city name",
             hint_text="e.g., London, Tokyo, New York",
@@ -108,23 +102,16 @@ class WeatherApp:
             prefix_icon=ft.Icons.LOCATION_CITY,
             autofocus=True,
             on_submit=self.on_search,
+            width=250,
         )
         
-        # Container for input and history popup (stacked)
-        self.input_stack = ft.Stack(
+        # Container for input and dropdown
+        self.input_container = ft.Column(
             [
-                ft.Container(
-                    content=self.city_input,
-                    on_hover=self.on_input_hover,
-                ),
-                ft.Container(
-                    content=self.history_popup,
-                    top=60,  # Position below the input field
-                    left=0,
-                    right=0,
-                ),
+                self.city_input,
+                self.history_dropdown,
             ],
-            height=200,  # Give enough space for popup
+            spacing=5,
         )
         
         # Search button
@@ -156,16 +143,13 @@ class WeatherApp:
         # Loading indicator
         self.loading = ft.ProgressRing(visible=False)
         
-        # Initialize history popup content
-        self.update_history_popup()
-        
         # Add all components to page
         self.page.add(
             ft.Column(
                 [
                     self.title_row,
                     ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
-                    self.input_stack,
+                    self.input_container,
                     self.search_button,
                     ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
                     self.loading,
@@ -177,82 +161,22 @@ class WeatherApp:
             )
         )
     
-    def on_input_hover(self, e):
-        """Show/hide history popup on hover."""
-        if e.data == "true":  # Mouse entered
-            if self.search_history:
-                self.history_popup.visible = True
-        else:  # Mouse left
-            self.history_popup.visible = False
+    def update_history_dropdown(self):
+        """Update the history dropdown options."""
+        self.history_dropdown.options = [
+            ft.dropdown.Option(city) for city in self.search_history
+        ]
+        self.history_dropdown.value = None  # Clear selection
         self.page.update()
     
-    def update_history_popup(self):
-        """Update the content of history popup."""
-        if not self.search_history:
-            self.history_popup.content = ft.Text(
-                "No search history yet",
-                size=12,
-                color=ft.Colors.GREY_500,
-                italic=True,
-            )
-            return
-        
-        history_items = []
-        for city in self.search_history:
-            history_items.append(
-                ft.Container(
-                    content=ft.Row(
-                        [
-                            ft.Icon(
-                                ft.Icons.HISTORY,
-                                size=16,
-                                color=ft.Colors.BLUE_400,
-                            ),
-                            ft.Text(
-                                city,
-                                size=14,
-                                color=ft.Colors.BLUE_900,
-                            ),
-                        ],
-                        spacing=8,
-                    ),
-                    padding=8,
-                    border_radius=4,
-                    ink=True,
-                    on_click=lambda e, c=city: self.select_from_history(c),
-                    on_hover=lambda e: self.on_history_item_hover(e),
-                )
-            )
-        
-        self.history_popup.content = ft.Column(
-            [
-                ft.Text(
-                    "Recent Searches",
-                    size=12,
-                    weight=ft.FontWeight.BOLD,
-                    color=ft.Colors.GREY_600,
-                ),
-                ft.Divider(height=5),
-                *history_items,
-            ],
-            spacing=2,
-            scroll=ft.ScrollMode.AUTO,
-        )
-    
-    def on_history_item_hover(self, e):
-        """Change background on history item hover."""
-        if e.data == "true":
-            e.control.bgcolor = ft.Colors.BLUE_50
-        else:
-            e.control.bgcolor = None
-        e.control.update()
-    
-    def select_from_history(self, city: str):
-        """Select a city from history."""
-        self.city_input.value = city
-        self.history_popup.visible = False
-        self.page.update()
-        self.page.run_task(self.get_weather)
+    def load_from_history(self, e):
+        """Load a city from history dropdown."""
+        if e.control.value:
+            self.city_input.value = e.control.value
+            self.page.run_task(self.get_weather)
+            # Clear dropdown selection after loading
+            e.control.value = None
+            self.page.update()
     
     def on_search(self, e):
         """Handle search button click or enter key press."""
@@ -286,7 +210,6 @@ class WeatherApp:
         self.loading.visible = True
         self.error_message.visible = False
         self.weather_container.visible = False
-        self.history_popup.visible = False
         self.page.update()
         
         try:
