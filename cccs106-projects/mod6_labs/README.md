@@ -68,10 +68,10 @@ A modern, feature-rich weather application built with Flet 0.28.3 that provides 
 ### Main Weather Display, Search and Forecast
 ![Weather Search](screenshots/1.gif)
 
-### Dark Mode & Theme Toggle
+### Temperature Unit Conversion
 ![Temperature Toggle](screenshots/2.gif)
 
-### Temperature Unit Conversion & 5-Day Forecast
+### Dark Mode
 ![Dark Mode](screenshots/3.gif)
 
 ### Error Handling
