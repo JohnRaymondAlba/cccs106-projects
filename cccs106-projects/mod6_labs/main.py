@@ -62,19 +62,20 @@ class WeatherApp:
     
     def build_ui(self):
         """Build the user interface."""
-        # Title
+        # Title with gradient effect (using blue theme)
         self.title = ft.Text(
             "Weather App",
-            size=32,
+            size=36,
             weight=ft.FontWeight.BOLD,
             color=ft.Colors.BLUE_700,
         )
         
-        # Theme toggle button
+        # Theme toggle button with hover effect
         self.theme_button = ft.IconButton(
             icon=ft.Icons.DARK_MODE,
             tooltip="Toggle theme",
             on_click=self.toggle_theme,
+            icon_size=24,
         )
         
         # Title row with theme button
@@ -86,23 +87,24 @@ class WeatherApp:
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
         )
         
-        # History dropdown
+        # History dropdown with enhanced styling
         self.history_dropdown = ft.Dropdown(
             label="Recent Searches",
             options=[ft.dropdown.Option(city) for city in self.search_history],
             on_change=self.load_from_history,
-            width=250,
+            width=300,
+            border_color=ft.Colors.BLUE_300,
         )
         
-        # City input field
+        # City input field with enhanced styling
         self.city_input = ft.TextField(
             label="Enter city name",
             hint_text="e.g., London, Tokyo, New York",
-            border_color=ft.Colors.BLUE_400,
+            border_color=ft.Colors.BLUE_300,
             prefix_icon=ft.Icons.LOCATION_CITY,
             autofocus=True,
             on_submit=self.on_search,
-            width=250,
+            width=300,
         )
         
         # Container for input and dropdown
@@ -111,10 +113,10 @@ class WeatherApp:
                 self.city_input,
                 self.history_dropdown,
             ],
-            spacing=5,
+            spacing=8,
         )
         
-        # Search button
+        # Search button with enhanced styling and hover effect
         self.search_button = ft.ElevatedButton(
             "Get Weather",
             icon=ft.Icons.SEARCH,
@@ -122,26 +124,40 @@ class WeatherApp:
             style=ft.ButtonStyle(
                 color=ft.Colors.WHITE,
                 bgcolor=ft.Colors.BLUE_700,
+                padding=ft.padding.symmetric(horizontal=32, vertical=12),
+                elevation=4,
             ),
         )
         
-        # Weather display container (initially hidden)
+        # Weather display container with enhanced styling
         self.weather_container = ft.Container(
             visible=False,
-            bgcolor=ft.Colors.BLUE_50,
-            border_radius=10,
-            padding=20,
+            bgcolor=ft.Colors.LIGHT_BLUE_50,
+            border_radius=15,
+            padding=25,
+            shadow=ft.BoxShadow(
+                spread_radius=1,
+                blur_radius=8,
+                color=ft.Colors.LIGHT_BLUE_100,
+            ),
+            border=ft.border.all(1, ft.Colors.LIGHT_BLUE_200),
         )
         
-        # Error message
+        # Error message with enhanced styling
         self.error_message = ft.Text(
             "",
             color=ft.Colors.RED_700,
             visible=False,
+            size=14,
+            weight=ft.FontWeight.W_500,
         )
         
-        # Loading indicator
-        self.loading = ft.ProgressRing(visible=False)
+        # Loading indicator with size adjustment
+        self.loading = ft.ProgressRing(
+            visible=False,
+            value=None,
+            stroke_width=4,
+        )
         
         # Add all components to page
         self.page.add(
@@ -243,15 +259,18 @@ class WeatherApp:
         icon_code = data.get("weather", [{}])[0].get("icon", "01d")
         wind_speed = data.get("wind", {}).get("speed", 0)
         
-        # Build weather display
+        # Build weather display with enhanced styling
         self.weather_container.content = ft.Column(
             [
-                # Location
+                # Location header with enhanced styling
                 ft.Text(
                     f"{city_name}, {country}",
-                    size=24,
+                    size=28,
                     weight=ft.FontWeight.BOLD,
+                    color=ft.Colors.BLUE_900,
                 ),
+                
+                ft.Divider(height=10, color=ft.Colors.LIGHT_BLUE_200),
                 
                 # Weather icon and description
                 ft.Row(
@@ -261,32 +280,48 @@ class WeatherApp:
                             width=100,
                             height=100,
                         ),
-                        ft.Text(
-                            description,
-                            size=20,
-                            italic=True,
+                        ft.Column(
+                            [
+                                ft.Text(
+                                    description,
+                                    size=18,
+                                    weight=ft.FontWeight.W_600,
+                                    color=ft.Colors.BLUE_700,
+                                ),
+                            ],
+                            alignment=ft.MainAxisAlignment.CENTER,
                         ),
                     ],
                     alignment=ft.MainAxisAlignment.CENTER,
+                    spacing=10,
                 ),
                 
-                # Temperature
-                ft.Text(
-                    f"{temp:.1f}°C",
-                    size=48,
-                    weight=ft.FontWeight.BOLD,
-                    color=ft.Colors.BLUE_900,
+                ft.Divider(height=10, color=ft.Colors.LIGHT_BLUE_200),
+                
+                # Temperature with enhanced styling
+                ft.Column(
+                    [
+                        ft.Text(
+                            f"{temp:.1f}°C",
+                            size=56,
+                            weight=ft.FontWeight.BOLD,
+                            color=ft.Colors.BLUE_900,
+                        ),
+                        
+                        ft.Text(
+                            f"Feels like {feels_like:.1f}°C",
+                            size=14,
+                            color=ft.Colors.BLUE_600,
+                            weight=ft.FontWeight.W_500,
+                        ),
+                    ],
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=5,
                 ),
                 
-                ft.Text(
-                    f"Feels like {feels_like:.1f}°C",
-                    size=16,
-                    color=ft.Colors.GREY_700,
-                ),
+                ft.Divider(height=15, color=ft.Colors.LIGHT_BLUE_200),
                 
-                ft.Divider(),
-                
-                # Additional info
+                # Additional info with better spacing
                 ft.Row(
                     [
                         self.create_info_card(
@@ -300,11 +335,12 @@ class WeatherApp:
                             f"{wind_speed} m/s"
                         ),
                     ],
-                    alignment=ft.MainAxisAlignment.SPACE_EVENLY,
+                    alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                    spacing=10,
                 ),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=10,
+            spacing=12,
         )
         
         # Setup animation - start with opacity 0
@@ -323,31 +359,37 @@ class WeatherApp:
         self.page.update()
     
     def create_info_card(self, icon, label, value):
-        """Create an info card for weather details."""
+        """Create an enhanced info card for weather details."""
         return ft.Container(
             content=ft.Column(
                 [
-                    ft.Icon(icon, size=30, color=ft.Colors.BLUE_700),
-                    ft.Text(label, size=12, color=ft.Colors.GREY_600),
+                    ft.Icon(icon, size=32, color=ft.Colors.BLUE_700),
+                    ft.Text(label, size=11, color=ft.Colors.BLUE_600, weight=ft.FontWeight.W_500),
                     ft.Text(
                         value,
-                        size=16,
+                        size=18,
                         weight=ft.FontWeight.BOLD,
                         color=ft.Colors.BLUE_900,
                     ),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=5,
+                spacing=6,
             ),
             bgcolor=ft.Colors.WHITE,
-            border_radius=10,
-            padding=15,
-            width=150,
+            border_radius=12,
+            padding=18,
+            width=140,
+            shadow=ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=4,
+                color=ft.Colors.LIGHT_BLUE_100,
+            ),
+            border=ft.border.all(1, ft.Colors.LIGHT_BLUE_200),
         )
     
     def show_error(self, message: str):
         """
-        Display error message to user with visual feedback.
+        Display error message to user with enhanced visual feedback.
         
         Args:
             message: Error message to display
