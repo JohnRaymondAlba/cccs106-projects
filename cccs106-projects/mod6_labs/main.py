@@ -51,6 +51,7 @@ class WeatherApp:
         )
         
         self.page.padding = 20
+        self.page.scroll = ft.ScrollMode.AUTO
         
         # Window properties (accessed via page.window in Flet 0.28.3)
         self.page.window.width = Config.APP_WIDTH
